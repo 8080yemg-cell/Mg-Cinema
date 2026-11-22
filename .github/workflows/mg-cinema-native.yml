@@ -875,6 +875,3 @@ jobs:
         with:
           name: mg-cinema-native-apk
           path: MgCinemaProject/app/build/outputs/apk/debug/app-debug.apk
-```[cite: 19]
-
-بعد النسخ واللصق وحفظ التعديلات، سيبدأ البناء مباشرة دون أي أخطاء في صياغة YAML[cite: 20, 21].
