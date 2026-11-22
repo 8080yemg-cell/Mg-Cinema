@@ -77,7 +77,7 @@ jobs:
                   applicationId "com.magai.mgcinema"
                   minSdk 19
                   targetSdk 34
-                  versionCode 7
+                  versionCode 8
                   versionName "0.2"
                   multiDexEnabled true
               }
@@ -204,7 +204,7 @@ jobs:
           cat << 'EOF' > MgCinemaProject/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@color/ic_launcher_bg" />
+              <background android:drawable="@mipmap/ic_launcher_foreground" />
               <foreground android:drawable="@mipmap/ic_launcher_foreground" />
           </adaptive-icon>
           EOF
@@ -212,7 +212,7 @@ jobs:
           cat << 'EOF' > MgCinemaProject/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@color/ic_launcher_bg" />
+              <background android:drawable="@mipmap/ic_launcher_foreground" />
               <foreground android:drawable="@mipmap/ic_launcher_foreground" />
           </adaptive-icon>
           EOF
@@ -963,7 +963,7 @@ jobs:
           }
           EOF
 
-      - name: Apply Mg Cinema App Icon (0014.png)
+      - name: Apply Mg Cinema App Icon (122.png)
         run: |
           python3 - << 'EOF'
           import os, shutil, subprocess, struct, zlib
@@ -983,7 +983,7 @@ jobs:
                   f.write(png)
 
           src = None
-          for candidate in ["0014.png", ".github/workflows/0014.png", ".github/0014.png", "0012.png", ".github/workflows/0012.png"]:
+          for candidate in ["122.png", ".github/workflows/122.png", ".github/122.png", "0014.png", ".github/workflows/0014.png", "0012.png", ".github/workflows/0012.png"]:
               if os.path.exists(candidate):
                   src = candidate
                   break
@@ -993,7 +993,7 @@ jobs:
                   if "/.git" in ("/" + root.replace("\\", "/")):
                       continue
                   for fn in files:
-                      if fn in ("0014.png", "0012.png"):
+                      if fn in ("122.png", "0014.png", "0012.png"):
                           src = os.path.join(root, fn)
                           break
                   if src:
@@ -1029,7 +1029,6 @@ jobs:
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False
                       )
 
-                  # إذا بقيت الصورة أكبر من 120KB (بسبب PNG غير مضغوط)، نحفظ نسخة JPEG خفيفة بنفس المسار
                   if not os.path.exists(fg_png) or os.path.getsize(fg_png) > 122880:
                       if has_ffmpeg:
                           subprocess.run(
