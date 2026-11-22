@@ -870,12 +870,9 @@ jobs:
             grep -E "FAILURE:|Execution failed for task|Caused by:|error:" -A 4 build.log | tail -n 60 || true
             exit $EXIT_CODE
           fi
-
-      - name: Upload Mg Cinema APK
+          
+- name: Upload Mg Cinema APK
         uses: actions/upload-artifact@v4
         with:
           name: mg-cinema-native-apk
           path: MgCinemaProject/app/build/outputs/apk/debug/app-debug.apk
-```[cite: 19]
-
-<FollowUp label="هل تريد إضافة مشغل فيديو وصوت مدمج داخل Mg Cinema؟" query="نعم، أضف مشغل فيديو وصوت داخلي في Mg Cinema يدعم التقديم والرجوع بالريموت دون الاعتماد على مشغل خارجي."/>
