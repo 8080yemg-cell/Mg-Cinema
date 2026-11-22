@@ -77,7 +77,7 @@ jobs:
                   applicationId "com.magai.mgcinema"
                   minSdk 19
                   targetSdk 34
-                  versionCode 6
+                  versionCode 7
                   versionName "0.2"
                   multiDexEnabled true
               }
@@ -204,7 +204,7 @@ jobs:
           cat << 'EOF' > MgCinemaProject/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@mipmap/ic_launcher_background" />
+              <background android:drawable="@color/ic_launcher_bg" />
               <foreground android:drawable="@mipmap/ic_launcher_foreground" />
           </adaptive-icon>
           EOF
@@ -212,7 +212,7 @@ jobs:
           cat << 'EOF' > MgCinemaProject/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@mipmap/ic_launcher_background" />
+              <background android:drawable="@color/ic_launcher_bg" />
               <foreground android:drawable="@mipmap/ic_launcher_foreground" />
           </adaptive-icon>
           EOF
@@ -968,7 +968,7 @@ jobs:
           python3 - << 'EOF'
           import os, shutil, subprocess, struct, zlib
 
-          def make_png(path, width=128, height=128, r=18, g=10, b=36):
+          def make_png(path, width=96, height=96, r=18, g=10, b=36):
               def chunk(tag, data):
                   return struct.pack("!I", len(data)) + tag + data + struct.pack("!I", zlib.crc32(tag + data) & 0xffffffff)
               raw = bytearray()
@@ -999,17 +999,6 @@ jobs:
                   if src:
                       break
 
-          if not src:
-              for root, _, files in os.walk("."):
-                  if "/.git" in ("/" + root.replace("\\", "/")) or "MgCinemaProject" in root:
-                      continue
-                  for fn in files:
-                      if fn.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
-                          src = os.path.join(root, fn)
-                          break
-                  if src:
-                      break
-
           print("Using icon source:", src)
 
           has_ffmpeg = shutil.which("ffmpeg") is not None
@@ -1026,28 +1015,34 @@ jobs:
           for d, px in densities:
               out_dir = os.path.join("MgCinemaProject/app/src/main/res", d)
               os.makedirs(out_dir, exist_ok=True)
-              master_png = os.path.join(out_dir, "ic_launcher.png")
+              fg_png = os.path.join(out_dir, "ic_launcher_foreground.png")
 
               if src:
                   if has_ffmpeg:
                       subprocess.run(
-                          ["ffmpeg", "-y", "-i", src, "-vf", f"scale={px}:{px}", master_png],
+                          ["ffmpeg", "-y", "-i", src, "-vf", f"scale={px}:{px}", "-compression_level", "100", fg_png],
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False
                       )
                   elif has_convert:
                       subprocess.run(
-                          ["convert", src, "-resize", f"{px}x{px}!", "-strip", master_png],
+                          ["convert", src, "-resize", f"{px}x{px}!", "-strip", "-quality", "85", fg_png],
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False
                       )
 
-                  if not os.path.exists(master_png) or os.path.getsize(master_png) == 0:
-                      with open(src, "rb") as rf, open(master_png, "wb") as wf:
-                          wf.write(rf.read())
+                  # إذا بقيت الصورة أكبر من 120KB (بسبب PNG غير مضغوط)، نحفظ نسخة JPEG خفيفة بنفس المسار
+                  if not os.path.exists(fg_png) or os.path.getsize(fg_png) > 122880:
+                      if has_ffmpeg:
+                          subprocess.run(
+                              ["ffmpeg", "-y", "-i", src, "-vf", f"scale={px}:{px}", "-q:v", "5", fg_png],
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False
+                          )
+                  if not os.path.exists(fg_png) or os.path.getsize(fg_png) == 0:
+                      shutil.copyfile(src, fg_png)
               else:
-                  make_png(master_png, px, px)
+                  make_png(fg_png, px, px)
 
-              for name in ["ic_launcher_round.png", "ic_launcher_foreground.png", "ic_launcher_background.png"]:
-                  shutil.copyfile(master_png, os.path.join(out_dir, name))
+              for name in ["ic_launcher.png", "ic_launcher_round.png"]:
+                  shutil.copyfile(fg_png, os.path.join(out_dir, name))
           EOF
 
       - name: Build Debug APK
