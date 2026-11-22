@@ -608,14 +608,15 @@ jobs:
 
                   new Thread(() -> {
                       String base = buildBaseUrl();
-                      String apiUrl = base + "/api/media";
+                      String builtUrl = base + "/api/media";
                       if (!subPath.isEmpty()) {
                           try {
-                              apiUrl += "?path=" + URLEncoder.encode(subPath, "UTF-8");
+                              builtUrl += "?path=" + URLEncoder.encode(subPath, "UTF-8");
                           } catch (Exception ignored) {}
                       }
+                      final String finalApiUrl = builtUrl;
 
-                      String json = httpGetText(apiUrl);
+                      String json = httpGetText(finalApiUrl);
                       if (json != null && json.contains("\"folders\"")) {
                           List<MediaEntry> folders = parseArrayEntries(json, "folders", "folder");
                           List<MediaEntry> items = parseArrayEntries(json, "items", null);
@@ -628,7 +629,7 @@ jobs:
                           runOnUiThread(() -> {
                               tvServerBadge.setText("غير متصل • تحقق من MG Server");
                               tvServerBadge.setTextColor(0xFFFF6B8B);
-                              renderEmptyMessage("تعذر الوصول إلى " + apiUrl + "\nتأكد من تشغيل تطبيق MG Server v0.2 وأن الجهازين على نفس الشبكة.");
+                              renderEmptyMessage("تعذر الوصول إلى " + finalApiUrl + "\nتأكد من تشغيل تطبيق MG Server v0.2 وأن الجهازين على نفس الشبكة.");
                           });
                       }
                   }).start();
