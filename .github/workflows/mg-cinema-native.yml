@@ -845,14 +845,43 @@ jobs:
 
       - name: Apply Mg Cinema App Icon
         run: |
-          if [ -f "0012.png" ]; then
-            for density in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
-              mkdir -p "MgCinemaProject/app/src/main/res/$density"
-              cp "0012.png" "MgCinemaProject/app/src/main/res/$density/ic_launcher.png"
-              cp "0012.png" "MgCinemaProject/app/src/main/res/$density/ic_launcher_round.png"
-              cp "0012.png" "MgCinemaProject/app/src/main/res/$density/ic_launcher_foreground.png"
-            done
-          fi
+          python3 - << 'EOF'
+          import os, struct, zlib
+
+          def make_png(path, width=192, height=192, r=180, g=15, b=45):
+              def chunk(tag, data):
+                  return struct.pack("!I", len(data)) + tag + data + struct.pack("!I", zlib.crc32(tag + data) & 0xffffffff)
+              raw = bytearray()
+              for y in range(height):
+                  raw.append(0)
+                  for x in range(width):
+                      dx = (x - width / 2.0) / (width / 2.0)
+                      dy = (y - height / 2.0) / (height / 2.0)
+                      dist = (dx * dx + dy * dy) ** 0.5
+                      boost = max(0.0, 1.0 - dist)
+                      rr = min(255, int(r * 0.4 + 229 * boost))
+                      gg = min(255, int(g * 0.4 + 25 * boost))
+                      bb = min(255, int(b * 0.4 + 140 * boost))
+                      raw.extend((rr, gg, bb, 255))
+              ihdr = struct.pack("!IIBBBBB", width, height, 8, 6, 0, 0, 0)
+              idat = zlib.compress(bytes(raw), level=6)
+              png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", idat) + chunk(b"IEND", b"")
+              with open(path, "wb") as f:
+                  f.write(png)
+
+          src = "0012.png" if os.path.exists("0012.png") else None
+          densities = ["mipmap-mdpi", "mipmap-hdpi", "mipmap-xhdpi", "mipmap-xxhdpi", "mipmap-xxxhdpi"]
+          for d in densities:
+              out_dir = os.path.join("MgCinemaProject/app/src/main/res", d)
+              os.makedirs(out_dir, exist_ok=True)
+              for name in ["ic_launcher.png", "ic_launcher_round.png", "ic_launcher_foreground.png"]:
+                  dst = os.path.join(out_dir, name)
+                  if src:
+                      with open(src, "rb") as rf, open(dst, "wb") as wf:
+                          wf.write(rf.read())
+                  else:
+                      make_png(dst)
+          EOF
 
       - name: Build Debug APK
         run: |
