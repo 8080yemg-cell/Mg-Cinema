@@ -32,6 +32,7 @@ jobs:
           mkdir -p MgCinemaProject/app/src/main/java/com/magai/mgcinema
           mkdir -p MgCinemaProject/app/src/main/res/layout
           mkdir -p MgCinemaProject/app/src/main/res/values
+          mkdir -p MgCinemaProject/app/src/main/res/xml
           mkdir -p MgCinemaProject/app/src/main/res/drawable
           mkdir -p MgCinemaProject/app/src/main/res/mipmap-anydpi-v26
 
@@ -77,8 +78,8 @@ jobs:
                   applicationId "com.magai.mgcinema"
                   minSdk 19
                   targetSdk 34
-                  versionCode 8
-                  versionName "0.2"
+                  versionCode 9
+                  versionName "0.3"
                   multiDexEnabled true
               }
 
@@ -101,6 +102,17 @@ jobs:
               implementation 'androidx.appcompat:appcompat:1.6.1'
               implementation 'androidx.multidex:multidex:2.0.1'
           }
+          EOF
+
+          cat << 'EOF' > MgCinemaProject/app/src/main/res/xml/network_security_config.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <network-security-config>
+              <base-config cleartextTrafficPermitted="true">
+                  <trust-anchors>
+                      <certificates src="system" />
+                  </trust-anchors>
+              </base-config>
+          </network-security-config>
           EOF
 
           cat << 'EOF' > MgCinemaProject/app/src/main/res/values/strings.xml
@@ -141,16 +153,6 @@ jobs:
                           android:endColor="#1D0916" />
                   </shape>
               </item>
-              <item android:top="140dp" android:left="30dp" android:right="30dp">
-                  <shape android:shape="rectangle">
-                      <corners android:radius="48dp" />
-                      <gradient
-                          android:angle="270"
-                          android:startColor="#337C3AED"
-                          android:centerColor="#26E50914"
-                          android:endColor="#0007060D" />
-                  </shape>
-              </item>
           </layer-list>
           EOF
 
@@ -160,7 +162,7 @@ jobs:
               <item android:state_focused="true">
                   <shape android:shape="rectangle">
                       <corners android:radius="16dp" />
-                      <solid android:color="#261A42" />
+                      <solid android:color="#2E1A52" />
                       <stroke android:width="3dp" android:color="#FF2A55" />
                   </shape>
               </item>
@@ -219,8 +221,7 @@ jobs:
 
           cat << 'EOF' > MgCinemaProject/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:tools="http://schemas.android.com/tools">
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
               <uses-permission android:name="android.permission.INTERNET" />
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -235,12 +236,14 @@ jobs:
                   android:roundIcon="@mipmap/ic_launcher_round"
                   android:banner="@mipmap/ic_launcher"
                   android:label="@string/app_name"
+                  android:networkSecurityConfig="@xml/network_security_config"
                   android:theme="@style/AppTheme"
                   android:usesCleartextTraffic="true">
 
                   <activity
                       android:name=".MainActivity"
                       android:configChanges="orientation|screenSize|keyboardHidden"
+                      android:windowSoftInputMode="stateAlwaysHidden"
                       android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
@@ -270,6 +273,7 @@ jobs:
                   android:id="@+id/mainScroll"
                   android:layout_width="match_parent"
                   android:layout_height="match_parent"
+                  android:descendantFocusability="afterDescendants"
                   android:padding="16dp"
                   android:scrollbars="vertical">
 
@@ -304,7 +308,7 @@ jobs:
                               <TextView
                                   android:layout_width="wrap_content"
                                   android:layout_height="wrap_content"
-                                  android:text="Mg Cinema v0.2"
+                                  android:text="Mg Cinema v0.3"
                                   android:textColor="#FFFFFF"
                                   android:textSize="20sp"
                                   android:textStyle="bold" />
@@ -314,7 +318,7 @@ jobs:
                                   android:layout_width="wrap_content"
                                   android:layout_height="wrap_content"
                                   android:layout_marginTop="2dp"
-                                  android:text="Mag Ai • متوافق مع MG Server v0.2 • TV / Projector D-Pad"
+                                  android:text="Mag Ai • متوافق مع MG Server • TV / Projector D-Pad"
                                   android:textColor="#C4B5FD"
                                   android:textSize="11sp" />
                           </LinearLayout>
@@ -344,10 +348,13 @@ jobs:
                               android:layout_marginEnd="6dp"
                               android:layout_weight="2"
                               android:background="@drawable/tv_focus_btn"
+                              android:digits="0123456789."
                               android:focusable="true"
                               android:focusableInTouchMode="true"
                               android:hint="IP السيرفر (مثلاً 192.168.1.200)"
-                              android:inputType="text"
+                              android:imeOptions="actionDone"
+                              android:inputType="phone"
+                              android:maxLines="1"
                               android:paddingHorizontal="12dp"
                               android:textColor="#FFFFFF"
                               android:textColorHint="#8B82A8"
@@ -360,10 +367,13 @@ jobs:
                               android:layout_marginStart="6dp"
                               android:layout_weight="1"
                               android:background="@drawable/tv_focus_btn"
+                              android:digits="0123456789"
                               android:focusable="true"
                               android:focusableInTouchMode="true"
                               android:hint="8080"
+                              android:imeOptions="actionDone"
                               android:inputType="number"
+                              android:maxLines="1"
                               android:paddingHorizontal="12dp"
                               android:textColor="#FFFFFF"
                               android:textColorHint="#8B82A8"
@@ -380,36 +390,52 @@ jobs:
                               android:id="@+id/btnConnect"
                               android:layout_width="0dp"
                               android:layout_height="46dp"
-                              android:layout_marginEnd="6dp"
+                              android:layout_marginEnd="4dp"
                               android:layout_weight="1"
                               android:background="@drawable/tv_focus_btn"
                               android:focusable="true"
-                              android:text="تحديث واتصال"
+                              android:text="اتصال"
                               android:textColor="#FFFFFF"
+                              android:textSize="13sp"
+                              android:textStyle="bold" />
+
+                          <Button
+                              android:id="@+id/btnAutoScan"
+                              android:layout_width="0dp"
+                              android:layout_height="46dp"
+                              android:layout_marginHorizontal="4dp"
+                              android:layout_weight="1.1"
+                              android:background="@drawable/tv_focus_btn"
+                              android:focusable="true"
+                              android:text="بحث تلقائي"
+                              android:textColor="#FFFFFF"
+                              android:textSize="13sp"
                               android:textStyle="bold" />
 
                           <Button
                               android:id="@+id/btnToggleView"
                               android:layout_width="0dp"
                               android:layout_height="46dp"
-                              android:layout_marginHorizontal="6dp"
+                              android:layout_marginHorizontal="4dp"
                               android:layout_weight="1"
                               android:background="@drawable/tv_focus_btn"
                               android:focusable="true"
                               android:text="عرض: شبكي"
                               android:textColor="#FFFFFF"
+                              android:textSize="13sp"
                               android:textStyle="bold" />
 
                           <Button
                               android:id="@+id/btnOpenWeb"
                               android:layout_width="0dp"
                               android:layout_height="46dp"
-                              android:layout_marginStart="6dp"
+                              android:layout_marginStart="4dp"
                               android:layout_weight="1"
                               android:background="@drawable/tv_focus_btn"
                               android:focusable="true"
-                              android:text="صفحة الويب"
+                              android:text="الويب"
                               android:textColor="#FFFFFF"
+                              android:textSize="13sp"
                               android:textStyle="bold" />
                       </LinearLayout>
 
@@ -459,11 +485,15 @@ jobs:
 
           import android.animation.ArgbEvaluator;
           import android.animation.ValueAnimator;
+          import android.content.Context;
           import android.content.Intent;
           import android.content.SharedPreferences;
           import android.graphics.Color;
+          import android.graphics.Rect;
           import android.net.Uri;
+          import android.net.wifi.WifiManager;
           import android.os.Bundle;
+          import android.text.TextUtils;
           import android.view.Gravity;
           import android.view.KeyEvent;
           import android.view.View;
@@ -475,24 +505,31 @@ jobs:
           import android.widget.ScrollView;
           import android.widget.TextView;
           import androidx.appcompat.app.AppCompatActivity;
+          import org.json.JSONArray;
+          import org.json.JSONObject;
           import java.io.BufferedReader;
           import java.io.InputStreamReader;
           import java.net.HttpURLConnection;
+          import java.net.Inet4Address;
+          import java.net.InetAddress;
+          import java.net.NetworkInterface;
           import java.net.URL;
           import java.net.URLEncoder;
           import java.util.ArrayList;
+          import java.util.Collections;
           import java.util.List;
-          import java.util.regex.Matcher;
-          import java.util.regex.Pattern;
+          import java.util.concurrent.ExecutorService;
+          import java.util.concurrent.Executors;
+          import java.util.concurrent.atomic.AtomicBoolean;
 
           public class MainActivity extends AppCompatActivity {
 
-              private static final String APP_VERSION = "0.2";
+              private static final String APP_VERSION = "0.3";
               private static final String SERVER_COMPAT = "MG Server v0.2";
 
               private EditText etServerIp, etServerPort;
               private TextView tvServerBadge, tvCurrentPath, tvVersionInfo;
-              private Button btnToggleView;
+              private Button btnToggleView, btnConnect, btnAutoScan;
               private LinearLayout dynamicListContainer;
               private ScrollView mainScroll;
               private View glowLayer;
@@ -505,6 +542,7 @@ jobs:
               private List<MediaEntry> lastFolders = new ArrayList<>();
               private List<MediaEntry> lastItems = new ArrayList<>();
               private boolean hasLoadedOnce = false;
+              private String lastHttpError = "";
 
               private static class MediaEntry {
                   final String name;
@@ -531,6 +569,8 @@ jobs:
                   tvCurrentPath = findViewById(R.id.tvCurrentPath);
                   tvVersionInfo = findViewById(R.id.tvVersionInfo);
                   btnToggleView = findViewById(R.id.btnToggleView);
+                  btnConnect = findViewById(R.id.btnConnect);
+                  btnAutoScan = findViewById(R.id.btnAutoScan);
                   dynamicListContainer = findViewById(R.id.dynamicListContainer);
                   mainScroll = findViewById(R.id.mainScroll);
                   glowLayer = findViewById(R.id.glowLayer);
@@ -544,17 +584,19 @@ jobs:
                   gridMode = prefs.getBoolean("grid_mode", true);
                   updateToggleViewLabel();
 
-                  Button btnConnect = findViewById(R.id.btnConnect);
                   Button btnOpenWeb = findViewById(R.id.btnOpenWeb);
                   Button btnBackDir = findViewById(R.id.btnBackDir);
 
                   setupScrollAmbientLighting();
 
                   btnConnect.setOnClickListener(v -> {
+                      normalizeInputFields();
                       saveServerConfig();
                       currentSubPath = "";
                       fetchDirectory(currentSubPath);
                   });
+
+                  btnAutoScan.setOnClickListener(v -> autoDiscoverServer());
 
                   btnToggleView.setOnClickListener(v -> {
                       gridMode = !gridMode;
@@ -566,6 +608,7 @@ jobs:
                   });
 
                   btnOpenWeb.setOnClickListener(v -> {
+                      normalizeInputFields();
                       saveServerConfig();
                       String url = buildBaseUrl() + (currentSubPath.isEmpty() ? "/" : ("/" + encodePathSegments(currentSubPath) + "/"));
                       try {
@@ -586,6 +629,27 @@ jobs:
                   fetchDirectory(currentSubPath);
               }
 
+              private String toEnglishDigits(String input) {
+                  if (input == null) return "";
+                  char[] out = input.trim().toCharArray();
+                  for (int i = 0; i < out.length; i++) {
+                      char c = out[i];
+                      if (c >= '\u0660' && c <= '\u0669') {
+                          out[i] = (char) ('0' + (c - '\u0660'));
+                      } else if (c >= '\u06F0' && c <= '\u06F9') {
+                          out[i] = (char) ('0' + (c - '\u06F0'));
+                      }
+                  }
+                  return new String(out).replace(" ", "");
+              }
+
+              private void normalizeInputFields() {
+                  String cleanIp = toEnglishDigits(etServerIp.getText().toString());
+                  String cleanPort = toEnglishDigits(etServerPort.getText().toString());
+                  if (!cleanIp.isEmpty()) etServerIp.setText(cleanIp);
+                  if (!cleanPort.isEmpty()) etServerPort.setText(cleanPort);
+              }
+
               private void updateToggleViewLabel() {
                   btnToggleView.setText(gridMode ? "عرض: شبكي" : "عرض: قائمة");
               }
@@ -603,14 +667,14 @@ jobs:
 
               private void saveServerConfig() {
                   prefs.edit()
-                          .putString("ip", etServerIp.getText().toString().trim())
-                          .putString("port", etServerPort.getText().toString().trim())
+                          .putString("ip", toEnglishDigits(etServerIp.getText().toString()))
+                          .putString("port", toEnglishDigits(etServerPort.getText().toString()))
                           .apply();
               }
 
               private String buildBaseUrl() {
-                  String ip = etServerIp.getText().toString().trim();
-                  String port = etServerPort.getText().toString().trim();
+                  String ip = toEnglishDigits(etServerIp.getText().toString());
+                  String port = toEnglishDigits(etServerPort.getText().toString());
                   if (ip.isEmpty()) ip = "192.168.1.200";
                   if (port.isEmpty()) port = "8080";
                   return "http://" + ip + ":" + port;
@@ -631,9 +695,80 @@ jobs:
                   return sb.toString();
               }
 
+              private String detectLocalSubnetPrefix() {
+                  try {
+                      WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                      if (wm != null && wm.getConnectionInfo() != null) {
+                          int ip = wm.getConnectionInfo().getIpAddress();
+                          if (ip != 0) {
+                              return (ip & 0xff) + "." + ((ip >> 8) & 0xff) + "." + ((ip >> 16) & 0xff) + ".";
+                          }
+                      }
+                  } catch (Exception ignored) {}
+
+                  try {
+                      for (NetworkInterface intf : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                          for (InetAddress addr : Collections.list(intf.getInetAddresses())) {
+                              if (!addr.isLoopbackAddress() && addr instanceof Inet4Address) {
+                                  String host = addr.getHostAddress();
+                                  if (host != null && host.contains(".")) {
+                                      return host.substring(0, host.lastIndexOf('.') + 1);
+                                  }
+                              }
+                          }
+                      }
+                  } catch (Exception ignored) {}
+                  return "192.168.1.";
+              }
+
+              private void autoDiscoverServer() {
+                  normalizeInputFields();
+                  final String port = toEnglishDigits(etServerPort.getText().toString()).isEmpty()
+                          ? "8080" : toEnglishDigits(etServerPort.getText().toString());
+                  final String prefix = detectLocalSubnetPrefix();
+
+                  tvServerBadge.setText("جاري البحث في " + prefix + "*");
+                  tvServerBadge.setTextColor(0xFFFACC15);
+
+                  new Thread(() -> {
+                      ExecutorService pool = Executors.newFixedThreadPool(24);
+                      final AtomicBoolean found = new AtomicBoolean(false);
+
+                      for (int i = 1; i <= 254; i++) {
+                          final String candidateIp = prefix + i;
+                          pool.submit(() -> {
+                              if (found.get()) return;
+                              String testUrl = "http://" + candidateIp + ":" + port + "/api/media";
+                              String res = httpGetText(testUrl, 900);
+                              if (res != null && (res.contains("\"folders\"") || res.contains("\"items\"") || res.contains("\"files\""))) {
+                                  if (found.compareAndSet(false, true)) {
+                                      runOnUiThread(() -> {
+                                          etServerIp.setText(candidateIp);
+                                          saveServerConfig();
+                                          currentSubPath = "";
+                                          fetchDirectory("");
+                                      });
+                                  }
+                              }
+                          });
+                      }
+                      pool.shutdown();
+                      try {
+                          Thread.sleep(3500);
+                      } catch (InterruptedException ignored) {}
+
+                      if (!found.get()) {
+                          runOnUiThread(() -> {
+                              tvServerBadge.setText("لم يُعثر على سيرفر في " + prefix + "*");
+                              tvServerBadge.setTextColor(0xFFFF6B8B);
+                          });
+                      }
+                  }).start();
+              }
+
               private void fetchDirectory(final String subPath) {
                   tvCurrentPath.setText("المسار: /" + (subPath.isEmpty() ? "MG Server" : subPath));
-                  tvServerBadge.setText("جاري الفحص...");
+                  tvServerBadge.setText("جاري الاتصال...");
                   tvServerBadge.setTextColor(0xFFFACC15);
 
                   new Thread(() -> {
@@ -646,13 +781,35 @@ jobs:
                       }
                       final String finalApiUrl = builtUrl;
 
-                      String json = httpGetText(finalApiUrl);
+                      String json = httpGetText(finalApiUrl, 4500);
                       if (json != null && (json.contains("\"folders\"") || json.contains("\"items\"") || json.contains("\"files\""))) {
-                          List<MediaEntry> folders = parseArrayEntries(json, "folders", "folder");
-                          List<MediaEntry> items = parseArrayEntries(json, "items", null);
-                          if (items.isEmpty()) {
-                              items = parseArrayEntries(json, "files", null);
+                          List<MediaEntry> folders = new ArrayList<>();
+                          List<MediaEntry> items = new ArrayList<>();
+                          try {
+                              JSONObject root = new JSONObject(json);
+                              if (root.has("folders")) {
+                                  JSONArray arrF = root.getJSONArray("folders");
+                                  for (int i = 0; i < arrF.length(); i++) {
+                                      JSONObject o = arrF.getJSONObject(i);
+                                      String name = o.optString("name", "");
+                                      String target = !o.optString("url", "").isEmpty() ? o.optString("url") : o.optString("path", "");
+                                      if (!name.isEmpty()) folders.add(new MediaEntry(name, target, "folder"));
+                                  }
+                              }
+                              JSONArray arrI = root.has("items") ? root.getJSONArray("items")
+                                      : (root.has("files") ? root.getJSONArray("files") : new JSONArray());
+                              for (int i = 0; i < arrI.length(); i++) {
+                                  JSONObject o = arrI.getJSONObject(i);
+                                  String name = o.optString("name", "");
+                                  String target = !o.optString("url", "").isEmpty() ? o.optString("url") : o.optString("path", "");
+                                  String rawType = o.optString("type", "").toLowerCase();
+                                  String resolvedType = normalizeMediaType(name, rawType);
+                                  if (!name.isEmpty()) items.add(new MediaEntry(name, target, resolvedType));
+                              }
+                          } catch (Exception e) {
+                              lastHttpError = "JSON Parse Error: " + e.getMessage();
                           }
+
                           final List<MediaEntry> finalFolders = folders;
                           final List<MediaEntry> finalItems = items;
                           runOnUiThread(() -> {
@@ -664,24 +821,29 @@ jobs:
                               renderEntries(finalFolders, finalItems);
                           });
                       } else {
+                          final String errDetail = lastHttpError;
                           runOnUiThread(() -> {
-                              tvServerBadge.setText("غير متصل • تحقق من MG Server");
+                              tvServerBadge.setText("غير متصل • " + base.replace("http://", ""));
                               tvServerBadge.setTextColor(0xFFFF6B8B);
-                              renderEmptyMessage("تعذر الوصول إلى " + finalApiUrl + "\nتأكد من تشغيل تطبيق MG Server v0.2 وأن الجهازين على نفس الشبكة.");
+                              renderEmptyMessage("تعذر الوصول إلى:\n" + finalApiUrl
+                                      + (errDetail.isEmpty() ? "" : ("\nالسبب: " + errDetail))
+                                      + "\n\n• تأكد أن تطبيق MG Server قيد التشغيل في الجهاز الآخر وأن زر تشغيل السيرفر مفعّل."
+                                      + "\n• اضغط زر (بحث تلقائي) لاكتشاف السيرفر تلقائياً.");
                           });
                       }
                   }).start();
               }
 
-              private String httpGetText(String urlStr) {
+              private String httpGetText(String urlStr, int timeoutMs) {
                   HttpURLConnection conn = null;
                   try {
                       URL url = new URL(urlStr);
                       conn = (HttpURLConnection) url.openConnection();
-                      conn.setConnectTimeout(4000);
-                      conn.setReadTimeout(6000);
+                      conn.setConnectTimeout(timeoutMs);
+                      conn.setReadTimeout(timeoutMs + 1500);
                       conn.setRequestMethod("GET");
-                      if (conn.getResponseCode() == 200) {
+                      int code = conn.getResponseCode();
+                      if (code == 200) {
                           BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
                           StringBuilder sb = new StringBuilder();
                           String line;
@@ -689,37 +851,17 @@ jobs:
                               sb.append(line);
                           }
                           br.close();
+                          lastHttpError = "";
                           return sb.toString();
+                      } else {
+                          lastHttpError = "HTTP " + code;
                       }
-                  } catch (Exception ignored) {
+                  } catch (Exception e) {
+                      lastHttpError = e.getClass().getSimpleName() + ": " + e.getMessage();
                   } finally {
                       if (conn != null) conn.disconnect();
                   }
                   return null;
-              }
-
-              private List<MediaEntry> parseArrayEntries(String json, String arrayKey, String forcedType) {
-                  List<MediaEntry> out = new ArrayList<>();
-                  Pattern arrPattern = Pattern.compile("\"" + arrayKey + "\"\\s*:\\s*\\[(.*?)\\]", Pattern.DOTALL);
-                  Matcher arrMatcher = arrPattern.matcher(json);
-                  if (!arrMatcher.find()) return out;
-
-                  String body = arrMatcher.group(1);
-                  Pattern objPattern = Pattern.compile("\\{(.*?)\\}", Pattern.DOTALL);
-                  Matcher objMatcher = objPattern.matcher(body);
-                  while (objMatcher.find()) {
-                      String obj = objMatcher.group(1);
-                      String name = unescapeJson(extractJsonField(obj, "name"));
-                      String path = unescapeJson(extractJsonField(obj, "path"));
-                      String url = unescapeJson(extractJsonField(obj, "url"));
-                      String rawType = forcedType != null ? forcedType : extractJsonField(obj, "type").toLowerCase();
-                      String resolvedType = normalizeMediaType(name, rawType);
-                      String target = !url.isEmpty() ? url : path;
-                      if (!name.isEmpty()) {
-                          out.add(new MediaEntry(name, target, resolvedType));
-                      }
-                  }
-                  return out;
               }
 
               private String normalizeMediaType(String name, String rawType) {
@@ -727,12 +869,13 @@ jobs:
                   String l = name.toLowerCase();
                   if ("audio".equals(rawType) || "sound".equals(rawType) || "music".equals(rawType)
                           || l.endsWith(".mp3") || l.endsWith(".m4a") || l.endsWith(".wav")
-                          || l.endsWith(".ogg") || l.endsWith(".flac") || l.endsWith(".aac") || l.endsWith(".opus")) {
+                          || l.endsWith(".ogg") || l.endsWith(".flac") || l.endsWith(".aac")
+                          || l.endsWith(".opus") || l.endsWith(".amr") || l.endsWith(".wma")) {
                       return "audio";
                   }
                   if ("video".equals(rawType)
                           || l.endsWith(".mp4") || l.endsWith(".mkv") || l.endsWith(".webm")
-                          || l.endsWith(".avi") || l.endsWith(".mov") || l.endsWith(".3gp")) {
+                          || l.endsWith(".avi") || l.endsWith(".mov") || l.endsWith(".3gp") || l.endsWith(".ts")) {
                       return "video";
                   }
                   if ("image".equals(rawType)
@@ -741,16 +884,6 @@ jobs:
                       return "image";
                   }
                   return rawType.isEmpty() ? "other" : rawType;
-              }
-
-              private String extractJsonField(String obj, String key) {
-                  Pattern p = Pattern.compile("\"" + key + "\"\\s*:\\s*\"(.*?)\"");
-                  Matcher m = p.matcher(obj);
-                  return m.find() ? m.group(1) : "";
-              }
-
-              private String unescapeJson(String s) {
-                  return s.replace("\\\\", "\\").replace("\\\"", "\"").replace("\\n", "\n");
               }
 
               private void renderEmptyMessage(String msg) {
@@ -803,7 +936,7 @@ jobs:
                   addMediaGroup("📦 ملفات APK و PDF", "📦", docsAndApps);
 
                   if (folders.isEmpty() && items.isEmpty()) {
-                      renderEmptyMessage("المجلد فارغ حالياً.\nضع ملفات أو مجلدات داخل مجلد MG Server على جهاز السيرفر ثم اضغط تحديث واتصال.");
+                      renderEmptyMessage("المجلد فارغ حالياً.\nضع ملفات أو مجلدات داخل مجلد MG Server على جهاز السيرفر ثم اضغط اتصال.");
                   }
               }
 
@@ -851,7 +984,7 @@ jobs:
                       View card = cards.get(i);
                       LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                               0,
-                              gridMode ? ViewGroup.LayoutParams.WRAP_CONTENT : ViewGroup.LayoutParams.WRAP_CONTENT,
+                              ViewGroup.LayoutParams.WRAP_CONTENT,
                               1f
                       );
                       lp.setMargins(cols > 1 ? 6 : 0, 0, cols > 1 ? 6 : 0, 0);
@@ -888,7 +1021,7 @@ jobs:
                   box.setPadding(14, gridMode ? 22 : 14, 14, gridMode ? 22 : 14);
                   box.setBackgroundResource(R.drawable.tv_focus_item);
                   box.setFocusable(true);
-                  box.setFocusableInTouchMode(true);
+                  box.setClickable(true);
 
                   TextView iconTv = new TextView(this);
                   iconTv.setText(emoji);
@@ -901,6 +1034,7 @@ jobs:
                   titleTv.setTextSize(gridMode ? 14f : 15f);
                   titleTv.setGravity(Gravity.CENTER);
                   titleTv.setMaxLines(2);
+                  titleTv.setEllipsize(TextUtils.TruncateAt.END);
                   titleTv.setPadding(0, 8, 0, 2);
 
                   TextView subTv = new TextView(this);
@@ -914,18 +1048,20 @@ jobs:
                   box.addView(subTv);
 
                   box.setOnFocusChangeListener((v, hasFocus) -> {
-                      v.animate().scaleX(hasFocus ? 1.04f : 1.0f)
-                                 .scaleY(hasFocus ? 1.04f : 1.0f)
-                                 .setDuration(140)
+                      v.animate().scaleX(hasFocus ? 1.05f : 1.0f)
+                                 .scaleY(hasFocus ? 1.05f : 1.0f)
+                                 .setDuration(130)
                                  .start();
                       if (hasFocus) {
-                          mainScroll.smoothScrollTo(0, Math.max(0, v.getTop() - 120));
+                          Rect rect = new Rect(0, 0, v.getWidth(), v.getHeight());
+                          v.requestRectangleOnScreen(rect, false);
+
                           ValueAnimator anim = ValueAnimator.ofObject(
                                   new ArgbEvaluator(),
                                   Color.argb(30, 229, 9, 20),
                                   Color.argb(62, 124, 58, 237)
                           );
-                          anim.setDuration(260);
+                          anim.setDuration(240);
                           anim.addUpdateListener(a -> glowLayer.setBackgroundColor((Integer) a.getAnimatedValue()));
                           anim.start();
                       }
@@ -944,13 +1080,18 @@ jobs:
                               fetchDirectory(currentSubPath);
                               return true;
                           }
-                      } else if (gridMode && (code == KeyEvent.KEYCODE_DPAD_DOWN || code == KeyEvent.KEYCODE_DPAD_UP)) {
+                      } else if (code == KeyEvent.KEYCODE_DPAD_DOWN || code == KeyEvent.KEYCODE_DPAD_UP
+                              || code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_DPAD_RIGHT) {
                           View currentFocus = getCurrentFocus();
                           int idx = focusableCards.indexOf(currentFocus);
                           if (idx != -1) {
-                              int targetIdx = (code == KeyEvent.KEYCODE_DPAD_DOWN)
-                                      ? idx + currentGridColumns
-                                      : idx - currentGridColumns;
+                              int step = gridMode ? currentGridColumns : 1;
+                              int targetIdx = -1;
+                              if (code == KeyEvent.KEYCODE_DPAD_DOWN) targetIdx = idx + step;
+                              else if (code == KeyEvent.KEYCODE_DPAD_UP) targetIdx = idx - step;
+                              else if (code == KeyEvent.KEYCODE_DPAD_RIGHT && gridMode) targetIdx = idx + 1;
+                              else if (code == KeyEvent.KEYCODE_DPAD_LEFT && gridMode) targetIdx = idx - 1;
+
                               if (targetIdx >= 0 && targetIdx < focusableCards.size()) {
                                   focusableCards.get(targetIdx).requestFocus();
                                   return true;
@@ -1059,10 +1200,10 @@ jobs:
             grep -E "FAILURE:|Execution failed for task|Caused by:|error:" -A 4 build.log | tail -n 60 || true
             exit $EXIT_CODE
           fi
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Mg-Cinema-v0.2.apk
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Mg-Cinema-v0.3.apk
 
       - name: Upload Mg Cinema APK
         uses: actions/upload-artifact@v4
         with:
           name: mg-cinema-native-apk
-          path: MgCinemaProject/app/build/outputs/apk/debug/Mg-Cinema-v0.2.apk
+          path: MgCinemaProject/app/build/outputs/apk/debug/Mg-Cinema-v0.3.apk
