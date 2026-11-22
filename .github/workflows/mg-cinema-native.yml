@@ -77,7 +77,7 @@ jobs:
                   applicationId "com.magai.mgcinema"
                   minSdk 19
                   targetSdk 34
-                  versionCode 4
+                  versionCode 5
                   versionName "0.2"
                   multiDexEnabled true
               }
@@ -111,7 +111,7 @@ jobs:
 
           cat << 'EOF' > MgCinemaProject/app/src/main/res/values/colors.xml
           <resources>
-              <color name="ic_launcher_bg">#090712</color>
+              <color name="ic_launcher_bg">#07060D</color>
               <color name="cinema_bg">#08070F</color>
               <color name="cinema_card">#151224</color>
               <color name="cinema_accent">#E50914</color>
@@ -204,7 +204,7 @@ jobs:
           cat << 'EOF' > MgCinemaProject/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@color/ic_launcher_bg" />
+              <background android:drawable="@mipmap/ic_launcher_background" />
               <foreground android:drawable="@mipmap/ic_launcher_foreground" />
           </adaptive-icon>
           EOF
@@ -212,7 +212,7 @@ jobs:
           cat << 'EOF' > MgCinemaProject/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@color/ic_launcher_bg" />
+              <background android:drawable="@mipmap/ic_launcher_background" />
               <foreground android:drawable="@mipmap/ic_launcher_foreground" />
           </adaptive-icon>
           EOF
@@ -289,9 +289,9 @@ jobs:
 
                           <ImageView
                               android:id="@+id/ivBrandLogo"
-                              android:layout_width="64dp"
-                              android:layout_height="64dp"
-                              android:scaleType="centerCrop"
+                              android:layout_width="76dp"
+                              android:layout_height="56dp"
+                              android:scaleType="fitXY"
                               android:src="@mipmap/ic_launcher" />
 
                           <LinearLayout
@@ -851,7 +851,7 @@ jobs:
                       View card = cards.get(i);
                       LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                               0,
-                              gridMode ? ViewGroup.LayoutParams.WRAP_CONTENT : ViewGroup.LayoutParams.WRAP_CONTENT,
+                              ViewGroup.LayoutParams.WRAP_CONTENT,
                               1f
                       );
                       lp.setMargins(cols > 1 ? 6 : 0, 0, cols > 1 ? 6 : 0, 0);
@@ -963,26 +963,19 @@ jobs:
           }
           EOF
 
-      - name: Apply Mg Cinema App Icon
+      - name: Apply Mg Cinema App Icon (0014.png)
         run: |
           python3 - << 'EOF'
           import os, struct, zlib
 
-          def make_png(path, width=192, height=192, r=180, g=15, b=45):
+          def make_png(path, width=192, height=192, r=18, g=10, b=36):
               def chunk(tag, data):
                   return struct.pack("!I", len(data)) + tag + data + struct.pack("!I", zlib.crc32(tag + data) & 0xffffffff)
               raw = bytearray()
               for y in range(height):
                   raw.append(0)
                   for x in range(width):
-                      dx = (x - width / 2.0) / (width / 2.0)
-                      dy = (y - height / 2.0) / (height / 2.0)
-                      dist = (dx * dx + dy * dy) ** 0.5
-                      boost = max(0.0, 1.0 - dist)
-                      rr = min(255, int(r * 0.4 + 229 * boost))
-                      gg = min(255, int(g * 0.4 + 25 * boost))
-                      bb = min(255, int(b * 0.4 + 140 * boost))
-                      raw.extend((rr, gg, bb, 255))
+                      raw.extend((r, g, b, 255))
               ihdr = struct.pack("!IIBBBBB", width, height, 8, 6, 0, 0, 0)
               idat = zlib.compress(bytes(raw), level=6)
               png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", idat) + chunk(b"IEND", b"")
@@ -990,7 +983,7 @@ jobs:
                   f.write(png)
 
           src = None
-          for candidate in ["0012.png", ".github/workflows/0012.png", ".github/0012.png", "icon.png", "ic_launcher.png", "app_icon.png"]:
+          for candidate in ["0014.png", ".github/workflows/0014.png", ".github/0014.png", "0012.png", ".github/workflows/0012.png"]:
               if os.path.exists(candidate):
                   src = candidate
                   break
@@ -1000,7 +993,7 @@ jobs:
                   if "/.git" in ("/" + root.replace("\\", "/")):
                       continue
                   for fn in files:
-                      if fn == "0012.png":
+                      if fn in ("0014.png", "0012.png"):
                           src = os.path.join(root, fn)
                           break
                   if src:
@@ -1023,7 +1016,7 @@ jobs:
           for d in densities:
               out_dir = os.path.join("MgCinemaProject/app/src/main/res", d)
               os.makedirs(out_dir, exist_ok=True)
-              for name in ["ic_launcher.png", "ic_launcher_round.png", "ic_launcher_foreground.png"]:
+              for name in ["ic_launcher.png", "ic_launcher_round.png", "ic_launcher_foreground.png", "ic_launcher_background.png"]:
                   dst = os.path.join(out_dir, name)
                   if src:
                       with open(src, "rb") as rf, open(dst, "wb") as wf:
