@@ -990,13 +990,25 @@ jobs:
                   f.write(png)
 
           src = None
-          for candidate in ["0012.png", "icon.png", "ic_launcher.png", "app_icon.png"]:
+          for candidate in ["0012.png", ".github/workflows/0012.png", ".github/0012.png", "icon.png", "ic_launcher.png", "app_icon.png"]:
               if os.path.exists(candidate):
                   src = candidate
                   break
+
           if not src:
               for root, _, files in os.walk("."):
-                  if ".git" in root or "MgCinemaProject" in root:
+                  if "/.git" in ("/" + root.replace("\\", "/")):
+                      continue
+                  for fn in files:
+                      if fn == "0012.png":
+                          src = os.path.join(root, fn)
+                          break
+                  if src:
+                      break
+
+          if not src:
+              for root, _, files in os.walk("."):
+                  if "/.git" in ("/" + root.replace("\\", "/")) or "MgCinemaProject" in root:
                       continue
                   for fn in files:
                       if fn.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
@@ -1004,6 +1016,8 @@ jobs:
                           break
                   if src:
                       break
+
+          print("Using icon source:", src)
 
           densities = ["mipmap-mdpi", "mipmap-hdpi", "mipmap-xhdpi", "mipmap-xxhdpi", "mipmap-xxxhdpi"]
           for d in densities:
