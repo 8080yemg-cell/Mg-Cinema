@@ -77,7 +77,7 @@ jobs:
                   applicationId "com.magai.mgcinema"
                   minSdk 19
                   targetSdk 34
-                  versionCode 5
+                  versionCode 6
                   versionName "0.2"
                   multiDexEnabled true
               }
@@ -851,7 +851,7 @@ jobs:
                       View card = cards.get(i);
                       LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                               0,
-                              ViewGroup.LayoutParams.WRAP_CONTENT,
+                              gridMode ? ViewGroup.LayoutParams.WRAP_CONTENT : ViewGroup.LayoutParams.WRAP_CONTENT,
                               1f
                       );
                       lp.setMargins(cols > 1 ? 6 : 0, 0, cols > 1 ? 6 : 0, 0);
@@ -966,9 +966,9 @@ jobs:
       - name: Apply Mg Cinema App Icon (0014.png)
         run: |
           python3 - << 'EOF'
-          import os, struct, zlib
+          import os, shutil, subprocess, struct, zlib
 
-          def make_png(path, width=192, height=192, r=18, g=10, b=36):
+          def make_png(path, width=128, height=128, r=18, g=10, b=36):
               def chunk(tag, data):
                   return struct.pack("!I", len(data)) + tag + data + struct.pack("!I", zlib.crc32(tag + data) & 0xffffffff)
               raw = bytearray()
@@ -977,7 +977,7 @@ jobs:
                   for x in range(width):
                       raw.extend((r, g, b, 255))
               ihdr = struct.pack("!IIBBBBB", width, height, 8, 6, 0, 0, 0)
-              idat = zlib.compress(bytes(raw), level=6)
+              idat = zlib.compress(bytes(raw), level=9)
               png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", idat) + chunk(b"IEND", b"")
               with open(path, "wb") as f:
                   f.write(png)
@@ -1012,17 +1012,42 @@ jobs:
 
           print("Using icon source:", src)
 
-          densities = ["mipmap-mdpi", "mipmap-hdpi", "mipmap-xhdpi", "mipmap-xxhdpi", "mipmap-xxxhdpi"]
-          for d in densities:
+          has_ffmpeg = shutil.which("ffmpeg") is not None
+          has_convert = shutil.which("convert") is not None
+
+          densities = [
+              ("mipmap-mdpi", 48),
+              ("mipmap-hdpi", 72),
+              ("mipmap-xhdpi", 96),
+              ("mipmap-xxhdpi", 144),
+              ("mipmap-xxxhdpi", 192),
+          ]
+
+          for d, px in densities:
               out_dir = os.path.join("MgCinemaProject/app/src/main/res", d)
               os.makedirs(out_dir, exist_ok=True)
-              for name in ["ic_launcher.png", "ic_launcher_round.png", "ic_launcher_foreground.png", "ic_launcher_background.png"]:
-                  dst = os.path.join(out_dir, name)
-                  if src:
-                      with open(src, "rb") as rf, open(dst, "wb") as wf:
+              master_png = os.path.join(out_dir, "ic_launcher.png")
+
+              if src:
+                  if has_ffmpeg:
+                      subprocess.run(
+                          ["ffmpeg", "-y", "-i", src, "-vf", f"scale={px}:{px}", master_png],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False
+                      )
+                  elif has_convert:
+                      subprocess.run(
+                          ["convert", src, "-resize", f"{px}x{px}!", "-strip", master_png],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False
+                      )
+
+                  if not os.path.exists(master_png) or os.path.getsize(master_png) == 0:
+                      with open(src, "rb") as rf, open(master_png, "wb") as wf:
                           wf.write(rf.read())
-                  else:
-                      make_png(dst)
+              else:
+                  make_png(master_png, px, px)
+
+              for name in ["ic_launcher_round.png", "ic_launcher_foreground.png", "ic_launcher_background.png"]:
+                  shutil.copyfile(master_png, os.path.join(out_dir, name))
           EOF
 
       - name: Build Debug APK
