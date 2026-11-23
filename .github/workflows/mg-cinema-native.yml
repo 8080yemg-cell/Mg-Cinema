@@ -1013,8 +1013,10 @@ jobs:
                       }
 
                       final Bitmap finalBmp = chosen;
-                      final String hintText = (videoCount > 0 || audioCount > 0)
-                              ? ("لمحة: " + (videoCount > 0 ? videoCount + " فيديو " : "") + (audioCount > 0 ? audioCount + " صوت" : ""))
+                      final int finalAudioCount = audioCount;
+                      final int finalVideoCount = videoCount;
+                      final String hintText = (finalVideoCount > 0 || finalAudioCount > 0)
+                              ? ("لمحة: " + (finalVideoCount > 0 ? finalVideoCount + " فيديو " : "") + (finalAudioCount > 0 ? finalAudioCount + " صوت" : ""))
                               : "فتح المجلد";
 
                       runOnUiThread(() -> {
@@ -1024,7 +1026,7 @@ jobs:
                               previewIv.setImageBitmap(finalBmp);
                               previewIv.setVisibility(View.VISIBLE);
                               fallbackIconTv.setVisibility(View.GONE);
-                          } else if (audioCount > 0 && videoCount == 0) {
+                          } else if (finalAudioCount > 0 && finalVideoCount == 0) {
                               fallbackIconTv.setText("🎵");
                           }
                       });
