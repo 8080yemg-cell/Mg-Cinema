@@ -78,8 +78,8 @@ jobs:
                   applicationId "com.magai.mgcinema"
                   minSdk 19
                   targetSdk 34
-                  versionCode 16
-                  versionName "0.1.16"
+                  versionCode 17
+                  versionName "0.1.17"
                   multiDexEnabled true
               }
 
@@ -308,7 +308,7 @@ jobs:
                               <TextView
                                   android:layout_width="wrap_content"
                                   android:layout_height="wrap_content"
-                                  android:text="Mg Cinema v0.1.16"
+                                  android:text="Mg Cinema v0.1.17"
                                   android:textColor="#FFFFFF"
                                   android:textSize="20sp"
                                   android:textStyle="bold" />
@@ -318,7 +318,7 @@ jobs:
                                   android:layout_width="wrap_content"
                                   android:layout_height="wrap_content"
                                   android:layout_marginTop="2dp"
-                                  android:text="Mag Ai • متوافق مع MG Server v0.1.16"
+                                  android:text="v0.1.17 • Mag"
                                   android:textColor="#C4B5FD"
                                   android:textSize="11sp" />
                           </LinearLayout>
@@ -351,7 +351,7 @@ jobs:
                               android:digits="0123456789."
                               android:focusable="true"
                               android:focusableInTouchMode="true"
-                              android:hint="IP السيرفر (مثلاً 192.168.1.222)"
+                              android:hint="IP السيرفر (مثلاً 192.168.1.200)"
                               android:imeOptions="actionDone"
                               android:inputType="phone"
                               android:maxLines="1"
@@ -439,6 +439,19 @@ jobs:
                               android:textStyle="bold" />
                       </LinearLayout>
 
+                      <HorizontalScrollView
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:layout_marginTop="8dp"
+                          android:scrollbars="none">
+
+                          <LinearLayout
+                              android:id="@+id/savedServersBar"
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:orientation="horizontal" />
+                      </HorizontalScrollView>
+
                       <LinearLayout
                           android:layout_width="match_parent"
                           android:layout_height="wrap_content"
@@ -523,22 +536,23 @@ jobs:
           import java.util.ArrayList;
           import java.util.Collections;
           import java.util.HashMap;
+          import java.util.LinkedHashSet;
           import java.util.List;
           import java.util.Map;
+          import java.util.Set;
           import java.util.concurrent.ExecutorService;
           import java.util.concurrent.Executors;
           import java.util.concurrent.atomic.AtomicBoolean;
 
           public class MainActivity extends AppCompatActivity {
 
-              private static final String APP_VERSION = "0.1.16";
-              private static final String DEFAULT_SERVER_IP = "192.168.1.222";
-              private static final String SERVER_COMPAT = "MG Server v0.1.16";
+              private static final String APP_VERSION = "0.1.17";
+              private static final String DEFAULT_SERVER_IP = "192.168.1.200";
 
               private EditText etServerIp, etServerPort;
               private TextView tvServerBadge, tvCurrentPath, tvVersionInfo;
               private Button btnToggleView, btnConnect, btnAutoScan;
-              private LinearLayout dynamicListContainer;
+              private LinearLayout dynamicListContainer, savedServersBar;
               private ScrollView mainScroll;
               private View glowLayer;
               private SharedPreferences prefs;
@@ -583,17 +597,19 @@ jobs:
                   btnConnect = findViewById(R.id.btnConnect);
                   btnAutoScan = findViewById(R.id.btnAutoScan);
                   dynamicListContainer = findViewById(R.id.dynamicListContainer);
+                  savedServersBar = findViewById(R.id.savedServersBar);
                   mainScroll = findViewById(R.id.mainScroll);
                   glowLayer = findViewById(R.id.glowLayer);
                   ImageView ivBrandLogo = findViewById(R.id.ivBrandLogo);
 
                   ivBrandLogo.setImageResource(R.mipmap.ic_launcher);
-                  tvVersionInfo.setText("v" + APP_VERSION + " • Mag Ai • متوافق مع " + SERVER_COMPAT);
+                  tvVersionInfo.setText("v" + APP_VERSION + " • Mag");
 
                   etServerIp.setText(prefs.getString("ip", DEFAULT_SERVER_IP));
                   etServerPort.setText(prefs.getString("port", "8080"));
                   gridMode = prefs.getBoolean("grid_mode", true);
                   updateToggleViewLabel();
+                  renderSavedServersBar();
 
                   Button btnOpenWeb = findViewById(R.id.btnOpenWeb);
                   Button btnBackDir = findViewById(R.id.btnBackDir);
@@ -678,11 +694,66 @@ jobs:
 
               private void saveServerConfig() {
                   String ipVal = toEnglishDigits(etServerIp.getText().toString());
+                  String portVal = toEnglishDigits(etServerPort.getText().toString());
                   if (ipVal.isEmpty()) ipVal = DEFAULT_SERVER_IP;
+                  if (portVal.isEmpty()) portVal = "8080";
+
+                  Set<String> history = new LinkedHashSet<>();
+                  history.add(ipVal + ":" + portVal);
+                  String rawList = prefs.getString("saved_servers", "");
+                  if (!rawList.isEmpty()) {
+                      for (String item : rawList.split(",")) {
+                          if (!item.trim().isEmpty() && history.size() < 5) {
+                              history.add(item.trim());
+                          }
+                      }
+                  }
+
                   prefs.edit()
                           .putString("ip", ipVal)
-                          .putString("port", toEnglishDigits(etServerPort.getText().toString()))
+                          .putString("port", portVal)
+                          .putString("saved_servers", TextUtils.join(",", history))
                           .apply();
+                  renderSavedServersBar();
+              }
+
+              private void renderSavedServersBar() {
+                  if (savedServersBar == null) return;
+                  savedServersBar.removeAllViews();
+                  String rawList = prefs.getString("saved_servers", "");
+                  if (rawList.isEmpty()) return;
+
+                  String[] servers = rawList.split(",");
+                  for (int i = 0; i < servers.length; i++) {
+                      final String entry = servers[i].trim();
+                      if (entry.isEmpty()) continue;
+
+                      Button chip = new Button(this);
+                      chip.setText("سيرفر " + (i + 1) + ": " + entry);
+                      chip.setTextColor(0xFFE9D5FF);
+                      chip.setTextSize(11f);
+                      chip.setAllCaps(false);
+                      chip.setBackgroundResource(R.drawable.tv_focus_btn);
+                      chip.setFocusable(true);
+                      chip.setPadding(18, 6, 18, 6);
+
+                      LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                              ViewGroup.LayoutParams.WRAP_CONTENT,
+                              68
+                      );
+                      lp.setMargins(0, 0, 8, 0);
+                      chip.setLayoutParams(lp);
+
+                      chip.setOnClickListener(v -> {
+                          String[] parts = entry.split(":");
+                          etServerIp.setText(parts[0]);
+                          etServerPort.setText(parts.length > 1 ? parts[1] : "8080");
+                          saveServerConfig();
+                          currentSubPath = "";
+                          fetchDirectory("");
+                      });
+                      savedServersBar.addView(chip);
+                  }
               }
 
               private String buildBaseUrl() {
@@ -1478,10 +1549,10 @@ jobs:
             grep -E "FAILURE:|Execution failed for task|Caused by:|error:" -A 4 build.log | tail -n 60 || true
             exit $EXIT_CODE
           fi
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Mg-Cinema-v0.1.16.apk
+          cp app/build/outputs/apk/debug/app-debug.apk "app/build/outputs/apk/debug/MG-Cinema-v0.1.17.apk"
 
       - name: Upload Mg Cinema APK
         uses: actions/upload-artifact@v4
         with:
           name: mg-cinema-native-apk
-          path: MgCinemaProject/app/build/outputs/apk/debug/Mg-Cinema-v0.1.16.apk
+          path: MgCinemaProject/app/build/outputs/apk/debug/MG-Cinema-v0.1.17.apk
