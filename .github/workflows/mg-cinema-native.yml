@@ -27,6 +27,17 @@ jobs:
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-cinema-0.1.18-${{ hashFiles('**/gradle.properties', '**/build.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-cinema-
+            ${{ runner.os }}-gradle-
+
       - name: Create Native Mg Cinema Project (API 19 to 34)
         run: |
           mkdir -p MgCinemaProject/app/src/main/java/com/magai/mgcinema
@@ -78,8 +89,8 @@ jobs:
                   applicationId "com.magai.mgcinema"
                   minSdk 19
                   targetSdk 34
-                  versionCode 17
-                  versionName "0.1.17"
+                  versionCode 18
+                  versionName "0.1.18"
                   multiDexEnabled true
               }
 
@@ -308,7 +319,7 @@ jobs:
                               <TextView
                                   android:layout_width="wrap_content"
                                   android:layout_height="wrap_content"
-                                  android:text="Mg Cinema v0.1.17"
+                                  android:text="Mg Cinema v0.1.18"
                                   android:textColor="#FFFFFF"
                                   android:textSize="20sp"
                                   android:textStyle="bold" />
@@ -318,7 +329,7 @@ jobs:
                                   android:layout_width="wrap_content"
                                   android:layout_height="wrap_content"
                                   android:layout_marginTop="2dp"
-                                  android:text="v0.1.17 • Mag"
+                                  android:text="v0.1.18 • Mag"
                                   android:textColor="#C4B5FD"
                                   android:textSize="11sp" />
                           </LinearLayout>
@@ -532,6 +543,7 @@ jobs:
           import java.net.InetAddress;
           import java.net.NetworkInterface;
           import java.net.URL;
+          import java.net.URLDecoder;
           import java.net.URLEncoder;
           import java.util.ArrayList;
           import java.util.Collections;
@@ -546,7 +558,7 @@ jobs:
 
           public class MainActivity extends AppCompatActivity {
 
-              private static final String APP_VERSION = "0.1.17";
+              private static final String APP_VERSION = "0.1.18";
               private static final String DEFAULT_SERVER_IP = "192.168.1.200";
 
               private EditText etServerIp, etServerPort;
@@ -654,6 +666,21 @@ jobs:
 
                   btnConnect.requestFocus();
                   fetchDirectory(currentSubPath);
+              }
+
+              private String extractRelPathFromTarget(MediaEntry entry, String parentSubPath) {
+                  String raw = entry.urlOrPath == null ? "" : entry.urlOrPath.trim();
+                  if (!raw.isEmpty()) {
+                      try {
+                          String noQuery = raw.split("\\?")[0];
+                          String decoded = URLDecoder.decode(noQuery, "UTF-8");
+                          String cleaned = decoded.replaceFirst("^/+", "").replaceAll("/+$", "");
+                          if (!cleaned.isEmpty()) {
+                              return cleaned;
+                          }
+                      } catch (Exception ignored) {}
+                  }
+                  return parentSubPath.isEmpty() ? entry.name : (parentSubPath + "/" + entry.name);
               }
 
               private String toEnglishDigits(String input) {
@@ -1022,7 +1049,8 @@ jobs:
               }
 
               private void resolveFolderPreview(final MediaEntry folder, final ImageView previewIv, final TextView fallbackIconTv, final TextView subTv) {
-                  String cacheKey = "folder::" + buildBaseUrl() + "::" + folder.name;
+                  final String subRel = extractRelPathFromTarget(folder, currentSubPath);
+                  String cacheKey = "folder::" + buildBaseUrl() + "::" + subRel;
                   if (thumbCache.containsKey(cacheKey)) {
                       Bitmap cached = thumbCache.get(cacheKey);
                       if (cached != null) {
@@ -1034,7 +1062,6 @@ jobs:
                   }
 
                   mediaWorkerPool.submit(() -> {
-                      String subRel = currentSubPath.isEmpty() ? folder.name : (currentSubPath + "/" + folder.name);
                       String apiUrl = buildBaseUrl() + "/api/media";
                       try {
                           apiUrl += "?path=" + URLEncoder.encode(subRel, "UTF-8");
@@ -1151,9 +1178,10 @@ jobs:
                       dynamicListContainer.addView(createSectionHeader("📁 المجلدات (" + folders.size() + ")"));
                       List<View> folderCards = new ArrayList<>();
                       for (final MediaEntry f : folders) {
+                          final String nextRel = extractRelPathFromTarget(f, currentSubPath);
                           CardHolder holder = createCardView("📁", f.name, "فتح المجلد");
                           holder.card.setOnClickListener(v -> {
-                              currentSubPath = currentSubPath.isEmpty() ? f.name : (currentSubPath + "/" + f.name);
+                              currentSubPath = nextRel;
                               fetchDirectory(currentSubPath);
                           });
                           resolveFolderPreview(f, holder.previewIv, holder.iconTv, holder.subTv);
@@ -1542,17 +1570,33 @@ jobs:
           curl -fsSL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o /tmp/gradle-8.7-bin.zip
           unzip -q /tmp/gradle-8.7-bin.zip -d /tmp/gradle
           cd MgCinemaProject
-          /tmp/gradle/gradle-8.7/bin/gradle assembleDebug --no-daemon 2>&1 | tee build.log
-          EXIT_CODE=${PIPESTATUS[0]}
+          ATTEMPT=1
+          MAX_ATTEMPTS=3
+          EXIT_CODE=1
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Gradle build attempt $ATTEMPT of $MAX_ATTEMPTS..."
+            /tmp/gradle/gradle-8.7/bin/gradle assembleDebug --no-daemon 2>&1 | tee build.log
+            EXIT_CODE=${PIPESTATUS[0]}
+            if [ $EXIT_CODE -eq 0 ]; then
+              break
+            fi
+            if grep -q "429 Too Many Requests\|Connection reset\|Read timed out" build.log && [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+              echo "Transient network/429 error detected, retrying in 15s..."
+              sleep 15
+              ATTEMPT=$((ATTEMPT + 1))
+            else
+              break
+            fi
+          done
           if [ $EXIT_CODE -ne 0 ]; then
             echo "=== ERROR SUMMARY ==="
             grep -E "FAILURE:|Execution failed for task|Caused by:|error:" -A 4 build.log | tail -n 60 || true
             exit $EXIT_CODE
           fi
-          cp app/build/outputs/apk/debug/app-debug.apk "app/build/outputs/apk/debug/MG-Cinema-v0.1.17.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "app/build/outputs/apk/debug/MG-Cinema-v0.1.18.apk"
 
       - name: Upload Mg Cinema APK
         uses: actions/upload-artifact@v4
         with:
           name: mg-cinema-native-apk
-          path: MgCinemaProject/app/build/outputs/apk/debug/MG-Cinema-v0.1.17.apk
+          path: MgCinemaProject/app/build/outputs/apk/debug/MG-Cinema-v0.1.18.apk
